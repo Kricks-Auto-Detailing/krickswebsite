@@ -20,6 +20,10 @@
 # production
 /build
 
+# runtime gallery uploads
+/data/gallery-items.json
+/public/uploads/
+
 # misc
 .DS_Store
 *.pem

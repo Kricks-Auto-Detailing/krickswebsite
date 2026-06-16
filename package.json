@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "square:locations": "node scripts/sync-square-catalog.mjs --locations",
+    "square:catalog:list": "node scripts/sync-square-catalog.mjs --list",
+    "square:catalog:plan": "node scripts/sync-square-catalog.mjs",
+    "square:catalog:sync": "node scripts/sync-square-catalog.mjs --apply"
   },
   "dependencies": {
     "next": "16.2.6",

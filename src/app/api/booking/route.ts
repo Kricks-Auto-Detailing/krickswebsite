@@ -1,0 +1,56 @@
+import { BookingPayload } from "@/lib/booking";
+import { prepareSquareBooking } from "@/lib/square/booking";
+
+export const runtime = "nodejs";
+
+export async function POST(request: Request) {
+  let payload: BookingPayload;
+
+  try {
+    payload = (await request.json()) as BookingPayload;
+  } catch {
+    return Response.json({ ok: false, message: "Invalid booking payload." }, { status: 400 });
+  }
+
+  const normalizedPayload: BookingPayload = {
+    ...payload,
+    addOns: Array.isArray(payload.addOns) ? payload.addOns : [],
+    overnightDropoff: Boolean(payload.overnightDropoff),
+    cancellationPolicy: Boolean(payload.cancellationPolicy),
+    travelFeePolicy: Boolean(payload.travelFeePolicy),
+  };
+
+  try {
+    const origin = getRequestOrigin(request);
+    const booking = await prepareSquareBooking(normalizedPayload, origin);
+
+    if (!booking.ok) {
+      return Response.json(booking, { status: 400 });
+    }
+
+    return Response.json(booking);
+  } catch (error) {
+    return Response.json(
+      {
+        ok: false,
+        message: error instanceof Error ? error.message : "Could not start the deposit checkout.",
+      },
+      { status: 500 },
+    );
+  }
+}
+
+function getRequestOrigin(request: Request) {
+  const configuredUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  if (configuredUrl) return configuredUrl.replace(/\/$/, "");
+
+  const url = new URL(request.url);
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  const forwardedHost = request.headers.get("x-forwarded-host");
+
+  if (forwardedProto && forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}`;
+  }
+
+  return `${url.protocol}//${url.host}`;
+}
