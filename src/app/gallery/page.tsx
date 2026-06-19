@@ -5,12 +5,22 @@ import { CTASection } from "@/components/CTASection";
 import { GalleryGrid } from "@/components/GalleryGrid";
 import { SectionHeader } from "@/components/SectionHeader";
 import { getPublicBeforeAfterPairs, getPublicGalleryCategories, getPublicGalleryItems } from "@/lib/gallery-store";
+import { absoluteUrl } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Gallery",
-  description: "Gallery for Krick's Auto Detailing standard details, powersport details, semis, trailers, and hauler work.",
+  title: "Before and After Auto Detailing Gallery",
+  description:
+    "See Krick's Auto Detailing before and after results for mobile detailing near Decatur, IN, including semis, powersport vehicles, cars, trucks, SUVs, trailers, and haulers.",
+  alternates: {
+    canonical: absoluteUrl("/gallery"),
+  },
+  openGraph: {
+    title: "Before and After Auto Detailing Gallery",
+    description: "Real Krick's Auto Detailing results for Decatur-area mobile detailing customers.",
+    url: absoluteUrl("/gallery"),
+  },
 };
 
 export default async function GalleryPage() {

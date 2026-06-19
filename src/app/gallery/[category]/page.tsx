@@ -5,6 +5,7 @@ import { BeforeAfterGallery } from "@/components/BeforeAfterGallery";
 import { CTASection } from "@/components/CTASection";
 import { SectionHeader } from "@/components/SectionHeader";
 import { getPublicGalleryCategories, getPublicGalleryCategory } from "@/lib/gallery-store";
+import { absoluteUrl } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -23,8 +24,16 @@ export async function generateMetadata({ params }: GalleryCategoryPageProps): Pr
   }
 
   return {
-    title: `${category.label} Gallery`,
-    description: `${category.label} before and after gallery for Krick's Auto Detailing.`,
+    title: `${category.label} Detailing Gallery Decatur IN`,
+    description: `${category.label} before and after gallery for Krick's Auto Detailing mobile detailing near Decatur, Indiana.`,
+    alternates: {
+      canonical: absoluteUrl(`/gallery/${category.slug}`),
+    },
+    openGraph: {
+      title: `${category.label} Detailing Gallery Decatur IN`,
+      description: `${category.label} before and after results from Krick's Auto Detailing near Decatur, IN.`,
+      url: absoluteUrl(`/gallery/${category.slug}`),
+    },
   };
 }
 

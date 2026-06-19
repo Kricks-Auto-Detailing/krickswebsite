@@ -9,6 +9,10 @@ import { parseBookingToken } from "@/lib/square-booking";
 export const metadata: Metadata = {
   title: "Deposit Paid",
   description: "Krick's Auto Detailing booking deposit confirmation.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 type BookingSuccessPageProps = {

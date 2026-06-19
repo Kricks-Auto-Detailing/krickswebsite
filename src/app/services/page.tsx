@@ -4,12 +4,22 @@ import { PolicyStrip } from "@/components/PolicyStrip";
 import { SectionHeader } from "@/components/SectionHeader";
 import { ServiceCard } from "@/components/ServiceCard";
 import { policies, serviceCategorySections, type Service } from "@/lib/services";
+import { absoluteUrl } from "@/lib/seo";
 import { getSquareCatalogForUi } from "@/lib/square/catalog";
 import type { SquareAddOn } from "@/lib/square/types";
 
 export const metadata: Metadata = {
-  title: "Services",
-  description: "Auto detailing service packages and pricing for Krick's Auto Detailing in Decatur, Indiana.",
+  title: "Auto Detailing Services and Pricing in Decatur IN",
+  description:
+    "View Krick's Auto Detailing mobile service packages and pricing for Decatur, IN: maintenance details, signature details, elite details, truck/SUV detailing, semi cab detailing, trailer detailing, and add-ons.",
+  alternates: {
+    canonical: absoluteUrl("/services"),
+  },
+  openGraph: {
+    title: "Auto Detailing Services and Pricing in Decatur IN",
+    description: "Mobile detailing packages and pricing for cars, trucks, SUVs, semis, trailers, and powersport vehicles near Decatur, Indiana.",
+    url: absoluteUrl("/services"),
+  },
 };
 
 export const dynamic = "force-dynamic";

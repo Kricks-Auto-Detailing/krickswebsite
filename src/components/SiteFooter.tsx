@@ -28,6 +28,7 @@ export function SiteFooter() {
         <div>
           <p className="text-sm font-black uppercase tracking-[0.18em] text-[#FACC15]">Explore</p>
           <div className="mt-4 grid gap-2 text-sm text-zinc-300">
+            <Link href="/mobile-car-detailing-decatur-in" className="hover:text-white">Mobile detailing Decatur IN</Link>
             <Link href="/services" className="hover:text-white">Services</Link>
             <Link href="/gallery" className="hover:text-white">Gallery</Link>
             <Link href="/booking" className="hover:text-white">Book an appointment</Link>

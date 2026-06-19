@@ -3,11 +3,21 @@ import { BookingForm } from "@/components/BookingForm";
 import { SectionHeader } from "@/components/SectionHeader";
 import { ServiceAreaMap } from "@/components/ServiceAreaMap";
 import { contact } from "@/lib/contact";
+import { absoluteUrl } from "@/lib/seo";
 import { getSquareCatalogForUi } from "@/lib/square/catalog";
 
 export const metadata: Metadata = {
-  title: "Book Now",
-  description: "Request a mobile detailing appointment with Krick's Auto Detailing.",
+  title: "Book Mobile Detailing in Decatur IN",
+  description:
+    "Book a mobile detailing appointment with Krick's Auto Detailing near Decatur, Indiana. Submit vehicle details, choose a service, and reserve with a $20 Square deposit.",
+  alternates: {
+    canonical: absoluteUrl("/booking"),
+  },
+  openGraph: {
+    title: "Book Mobile Detailing in Decatur IN",
+    description: "Reserve a Krick's Auto Detailing appointment for cars, trucks, SUVs, semis, trailers, and powersport vehicles near Decatur, IN.",
+    url: absoluteUrl("/booking"),
+  },
 };
 
 type BookingPageProps = {

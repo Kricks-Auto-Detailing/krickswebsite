@@ -9,6 +9,7 @@ import { ServiceCard } from "@/components/ServiceCard";
 import { TestimonialCards } from "@/components/TestimonialCards";
 import { ButtonLink } from "@/components/ButtonLink";
 import { getPublicGalleryItems } from "@/lib/gallery-store";
+import { serviceAreaText } from "@/lib/seo";
 import { getSquareCatalogForUi } from "@/lib/square/catalog";
 
 export const dynamic = "force-dynamic";
@@ -91,6 +92,28 @@ export default async function Home() {
                 <p className="text-base font-black uppercase leading-tight text-white sm:text-xl">{title}</p>
                 <p className="mt-2 text-xs leading-5 text-zinc-400 sm:mt-3 sm:text-sm sm:leading-6">{text}</p>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-black px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
+        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.85fr_1fr] lg:items-start">
+          <SectionHeader
+            eyebrow="Local detailers near Decatur"
+            title="Mobile car detailing around Decatur, IN."
+            text={`Searching for car detailers near Decatur, IN? Krick's Auto Detailing brings mobile interior and exterior detailing to Decatur and nearby communities including ${serviceAreaText()}.`}
+          />
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[
+              ["Mobile appointments", "Detailing at homes, workplaces, and accessible locations in the Decatur-area service radius."],
+              ["Cars, trucks, SUVs", "Maintenance, Signature, and Elite details for daily drivers and larger family vehicles."],
+              ["Working vehicles", "Semi cab, trailer, hauler, and powersport detailing for vehicles that see real use."],
+            ].map(([title, text]) => (
+              <article key={title} className="border border-[#6D28D9]/40 bg-white/[0.04] p-4">
+                <h2 className="text-base font-black uppercase leading-tight text-white">{title}</h2>
+                <p className="mt-2 text-sm leading-6 text-zinc-400">{text}</p>
+              </article>
             ))}
           </div>
         </div>
