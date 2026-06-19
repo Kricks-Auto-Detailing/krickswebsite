@@ -1,4 +1,4 @@
-import { BookingPayload } from "@/lib/booking";
+import { BookingPayload, normalizeBookingPayload } from "@/lib/booking";
 import { prepareSquareBooking } from "@/lib/square/booking";
 
 export const runtime = "nodejs";
@@ -12,13 +12,7 @@ export async function POST(request: Request) {
     return Response.json({ ok: false, message: "Invalid booking payload." }, { status: 400 });
   }
 
-  const normalizedPayload: BookingPayload = {
-    ...payload,
-    addOns: Array.isArray(payload.addOns) ? payload.addOns : [],
-    overnightDropoff: Boolean(payload.overnightDropoff),
-    cancellationPolicy: Boolean(payload.cancellationPolicy),
-    travelFeePolicy: Boolean(payload.travelFeePolicy),
-  };
+  const normalizedPayload = normalizeBookingPayload(payload);
 
   try {
     const booking = await prepareSquareBooking(normalizedPayload, getRequestOrigin(request));

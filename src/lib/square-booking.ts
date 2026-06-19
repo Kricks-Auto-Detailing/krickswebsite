@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { BookingPayload } from "@/lib/booking";
+import { BookingPayload, normalizeEmail } from "@/lib/booking";
 import { getServiceById } from "@/lib/services";
 import { getSquareEnv } from "@/lib/square/env";
 import type { SquareBookingContext } from "@/lib/square/types";
@@ -22,9 +22,11 @@ type SquareOrderResponse = {
 };
 
 export function bookingToSquareMetadata(payload: BookingPayload) {
+  const email = normalizeEmail(payload.email);
+
   return {
     name: payload.fullName.slice(0, 255),
-    email: payload.email.slice(0, 255),
+    email: email.slice(0, 255),
     phone: payload.phone.slice(0, 255),
     address: `${payload.address}, ${payload.city}`.slice(0, 255),
     vehicle: `${payload.vehicleSize} ${payload.vehicleType}`.slice(0, 255),
@@ -103,9 +105,10 @@ export async function createDepositPaymentLink(payload: BookingPayload, origin: 
   const env = getSquareEnv();
   const service = context?.selectedService ?? getServiceById(payload.serviceId);
   const bookingToken = createBookingToken(payload);
+  const email = normalizeEmail(payload.email);
   const metadata = compactMetadata({
     name: payload.fullName,
-    email: payload.email,
+    email,
     phone: payload.phone,
     service: payload.serviceId,
     service_name: service?.title ?? payload.serviceId,
@@ -146,7 +149,7 @@ export async function createDepositPaymentLink(payload: BookingPayload, origin: 
         redirect_url: `${origin}/booking/success?booking=${encodeURIComponent(bookingToken)}`,
       },
       pre_populated_data: {
-        buyer_email: payload.email,
+        buyer_email: email,
       },
       payment_note: `Krick's deposit for ${payload.fullName} / ${service?.title ?? payload.serviceId}`.slice(0, 500),
     }),

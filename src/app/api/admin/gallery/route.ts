@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { cookies } from "next/headers";
-import { getAdminCookieName, isValidAdminSession } from "@/lib/admin-auth";
+import { getAdminCookieName, isAdminSessionReady } from "@/lib/admin-auth";
 import { addUploadedGalleryItem, getUploadedGalleryItems } from "@/lib/gallery-store";
 import { galleryCategoryOptions } from "@/lib/services";
 
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
 
 async function isAuthenticated() {
   const cookieStore = await cookies();
-  return isValidAdminSession(cookieStore.get(getAdminCookieName())?.value);
+  return isAdminSessionReady(cookieStore.get(getAdminCookieName())?.value);
 }
 
 async function saveGalleryFile(file: File, name: string) {

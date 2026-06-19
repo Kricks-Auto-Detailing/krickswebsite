@@ -1,4 +1,4 @@
-import { BookingPayload, selectedAddOnLabels, validateBooking } from "@/lib/booking";
+import { BookingPayload, normalizeBookingPayload, selectedAddOnLabels, validateBooking } from "@/lib/booking";
 import { getSquareCatalogForUi, findCatalogAddOns, findCatalogService } from "@/lib/square/catalog";
 import { upsertSquareCustomer } from "@/lib/square/customers";
 
@@ -13,8 +13,9 @@ export async function POST(request: Request) {
     return Response.json({ ok: false, message: "Invalid customer payload." }, { status: 400 });
   }
 
+  const normalizedPayload = normalizeBookingPayload(payload);
   const catalog = await getSquareCatalogForUi();
-  const validation = validateBooking(payload, {
+  const validation = validateBooking(normalizedPayload, {
     serviceIds: catalog.services.map((service) => service.id),
     addOnIds: catalog.addOns.map((addOn) => addOn.id),
   });
@@ -24,12 +25,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const service = findCatalogService(catalog, payload.serviceId);
-    const selectedAddOns = findCatalogAddOns(catalog, payload.addOns);
+    const service = findCatalogService(catalog, normalizedPayload.serviceId);
+    const selectedAddOns = findCatalogAddOns(catalog, normalizedPayload.addOns);
     const addOnLabels = selectedAddOns.length
       ? selectedAddOns.map((addOn) => `${addOn.label} (${addOn.price})`)
-      : selectedAddOnLabels(payload.addOns);
-    const customer = await upsertSquareCustomer(payload, service?.title ?? payload.serviceId, addOnLabels);
+      : selectedAddOnLabels(normalizedPayload.addOns);
+    const customer = await upsertSquareCustomer(normalizedPayload, service?.title ?? normalizedPayload.serviceId, addOnLabels);
 
     return Response.json({ ok: true, customer });
   } catch (error) {

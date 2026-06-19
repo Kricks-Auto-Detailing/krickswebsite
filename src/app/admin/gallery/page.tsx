@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { AdminGalleryManager } from "@/components/AdminGalleryManager";
 import { SectionHeader } from "@/components/SectionHeader";
-import { getAdminCookieName, isValidAdminSession } from "@/lib/admin-auth";
+import { getAdminCookieName, isAdminPasswordChangeRequired, isValidAdminSession } from "@/lib/admin-auth";
 import { getUploadedGalleryItems } from "@/lib/gallery-store";
 import { galleryCategoryOptions } from "@/lib/services";
 import { getSquarePricingCatalog } from "@/lib/square/pricing";
@@ -19,8 +19,10 @@ export const metadata: Metadata = {
 export default async function AdminGalleryPage() {
   const cookieStore = await cookies();
   const initialAuthenticated = isValidAdminSession(cookieStore.get(getAdminCookieName())?.value);
-  const initialItems = initialAuthenticated ? await getUploadedGalleryItems({ includeDrafts: true }) : [];
-  const initialPricingCatalog = initialAuthenticated ? await getInitialPricingCatalog() : null;
+  const initialPasswordChangeRequired = initialAuthenticated ? await isAdminPasswordChangeRequired() : false;
+  const adminReady = initialAuthenticated && !initialPasswordChangeRequired;
+  const initialItems = adminReady ? await getUploadedGalleryItems({ includeDrafts: true }) : [];
+  const initialPricingCatalog = adminReady ? await getInitialPricingCatalog() : null;
 
   return (
     <>
@@ -39,6 +41,7 @@ export default async function AdminGalleryPage() {
           <AdminGalleryManager
             categories={galleryCategoryOptions}
             initialAuthenticated={initialAuthenticated}
+            initialPasswordChangeRequired={initialPasswordChangeRequired}
             initialItems={initialItems}
             initialPricingCatalog={initialPricingCatalog}
           />

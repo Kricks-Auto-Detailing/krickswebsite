@@ -44,13 +44,23 @@ type PricingCatalog = {
 type AdminGalleryManagerProps = {
   categories: CategoryOption[];
   initialAuthenticated: boolean;
+  initialPasswordChangeRequired: boolean;
   initialItems: UploadedItem[];
   initialPricingCatalog: PricingCatalog | null;
 };
 
-export function AdminGalleryManager({ categories, initialAuthenticated, initialItems, initialPricingCatalog }: AdminGalleryManagerProps) {
+export function AdminGalleryManager({
+  categories,
+  initialAuthenticated,
+  initialPasswordChangeRequired,
+  initialItems,
+  initialPricingCatalog,
+}: AdminGalleryManagerProps) {
   const [authenticated, setAuthenticated] = useState(initialAuthenticated);
+  const [passwordChangeRequired, setPasswordChangeRequired] = useState(initialPasswordChangeRequired);
   const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [items, setItems] = useState<UploadedItem[]>(initialItems);
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
@@ -96,6 +106,7 @@ export function AdminGalleryManager({ categories, initialAuthenticated, initialI
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password }),
     });
+    const result = (await response.json().catch(() => null)) as { passwordChangeRequired?: boolean } | null;
 
     if (!response.ok) {
       setStatus("error");
@@ -104,8 +115,38 @@ export function AdminGalleryManager({ categories, initialAuthenticated, initialI
     }
 
     setAuthenticated(true);
+    setPasswordChangeRequired(Boolean(result?.passwordChangeRequired));
     setPassword("");
     setStatus("idle");
+    if (!result?.passwordChangeRequired) {
+      await loadItems();
+      await loadPricing();
+    }
+  }
+
+  async function handlePasswordChange(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setStatus("loading");
+    setMessage("");
+
+    const response = await fetch("/api/admin/password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ newPassword, confirmPassword }),
+    });
+    const result = (await response.json().catch(() => null)) as { ok?: boolean; message?: string; passwordChangeRequired?: boolean } | null;
+
+    if (!response.ok || !result?.ok) {
+      setStatus("error");
+      setMessage(result?.message ?? "Password could not be changed.");
+      return;
+    }
+
+    setPasswordChangeRequired(Boolean(result.passwordChangeRequired));
+    setNewPassword("");
+    setConfirmPassword("");
+    setStatus("idle");
+    setMessage("Password changed. Admin tools are unlocked.");
     await loadItems();
     await loadPricing();
   }
@@ -193,6 +234,48 @@ export function AdminGalleryManager({ categories, initialAuthenticated, initialI
         {message ? <p className="text-sm font-bold text-[#FACC15]">{message}</p> : null}
         <button className="min-h-12 skew-x-[-10deg] bg-[#FACC15] px-5 py-3 text-sm font-black uppercase tracking-[0.16em] text-black transition hover:bg-white" disabled={status === "loading"}>
           <span className="block skew-x-[10deg]">Login</span>
+        </button>
+      </form>
+    );
+  }
+
+  if (passwordChangeRequired) {
+    return (
+      <form onSubmit={handlePasswordChange} className="grid max-w-xl gap-5 border border-[#6D28D9]/50 bg-[#080808] p-6 shadow-[0_0_50px_rgba(109,40,217,0.18)]">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-[#FACC15]">Required setup</p>
+          <h2 className="mt-2 text-2xl font-black uppercase text-white">Change admin password</h2>
+          <p className="mt-3 text-sm leading-6 text-zinc-400">
+            This temporary login must be replaced before gallery uploads or price changes are available.
+          </p>
+        </div>
+        <label className="grid gap-2">
+          <span className="text-xs font-black uppercase tracking-[0.18em] text-[#FACC15]">New password</span>
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(event) => setNewPassword(event.target.value)}
+            className="field"
+            autoComplete="new-password"
+            minLength={12}
+            required
+          />
+        </label>
+        <label className="grid gap-2">
+          <span className="text-xs font-black uppercase tracking-[0.18em] text-[#FACC15]">Confirm password</span>
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            className="field"
+            autoComplete="new-password"
+            minLength={12}
+            required
+          />
+        </label>
+        {message ? <p className="text-sm font-bold text-[#FACC15]">{message}</p> : null}
+        <button className="min-h-12 skew-x-[-10deg] bg-[#FACC15] px-5 py-3 text-sm font-black uppercase tracking-[0.16em] text-black transition hover:bg-white disabled:opacity-60" disabled={status === "loading"}>
+          <span className="block skew-x-[10deg]">{status === "loading" ? "Saving" : "Save New Password"}</span>
         </button>
       </form>
     );

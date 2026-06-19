@@ -45,49 +45,82 @@ type BookingValidationOptions = {
   addOnIds?: string[];
 };
 
+export function normalizeEmail(email: unknown) {
+  return cleanString(email).toLowerCase();
+}
+
+export function normalizeBookingPayload(payload: BookingPayload): BookingPayload {
+  return {
+    fullName: cleanString(payload.fullName),
+    email: normalizeEmail(payload.email),
+    phone: cleanString(payload.phone),
+    address: cleanString(payload.address),
+    city: cleanString(payload.city),
+    vehicleType: cleanString(payload.vehicleType),
+    vehicleSize: cleanString(payload.vehicleSize),
+    vehicleMake: cleanString(payload.vehicleMake),
+    vehicleModel: cleanString(payload.vehicleModel),
+    vehicleYear: cleanString(payload.vehicleYear),
+    vehicleColor: cleanString(payload.vehicleColor),
+    serviceId: cleanString(payload.serviceId),
+    addOns: Array.from(new Set((Array.isArray(payload.addOns) ? payload.addOns : []).map(cleanString).filter(Boolean))),
+    preferredDate: cleanString(payload.preferredDate),
+    preferredTime: cleanString(payload.preferredTime),
+    overnightDropoff: Boolean(payload.overnightDropoff),
+    notes: cleanString(payload.notes),
+    cancellationPolicy: Boolean(payload.cancellationPolicy),
+    travelFeePolicy: Boolean(payload.travelFeePolicy),
+  };
+}
+
+function cleanString(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
 export function validateBooking(payload: BookingPayload, options: BookingValidationOptions = {}): BookingValidation {
   const errors: Record<string, string> = {};
+  const normalizedPayload = normalizeBookingPayload(payload);
 
   for (const field of requiredTextFields) {
-    if (!String(payload[field] ?? "").trim()) {
+    if (!String(normalizedPayload[field] ?? "").trim()) {
       errors[field] = "Required";
     }
   }
 
-  if (payload.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
+  if (normalizedPayload.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedPayload.email)) {
     errors.email = "Enter a valid email";
   }
 
   const validServiceIds = options.serviceIds ?? services.map((service) => service.id);
 
-  if (payload.serviceId && !validServiceIds.includes(payload.serviceId)) {
+  if (normalizedPayload.serviceId && !validServiceIds.includes(normalizedPayload.serviceId)) {
     errors.serviceId = "Select a valid service";
   }
 
   const selectedAddOns = new Set(options.addOnIds ?? addOns.map((addOn) => addOn.id));
-  for (const addOn of payload.addOns) {
+  for (const addOn of normalizedPayload.addOns) {
     if (!selectedAddOns.has(addOn as (typeof addOns)[number]["id"])) {
       errors.addOns = "Select valid add-ons";
     }
   }
 
-  if (payload.preferredTime && !isBookableTime(payload.preferredTime)) {
+  if (normalizedPayload.preferredTime && !isBookableTime(normalizedPayload.preferredTime)) {
     errors.preferredTime = "Appointments must start between 9:00 AM and 8:00 PM";
   }
 
-  if (payload.preferredDate) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(payload.preferredDate)) {
+  if (normalizedPayload.preferredDate) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedPayload.preferredDate)) {
       errors.preferredDate = "Enter a valid appointment date";
-    } else if (payload.preferredDate < getServiceTodayDate()) {
+    } else if (normalizedPayload.preferredDate < getServiceTodayDate()) {
       errors.preferredDate = "Choose today or a future date";
     }
   }
 
-  if (!payload.cancellationPolicy) {
+  if (!normalizedPayload.cancellationPolicy) {
     errors.cancellationPolicy = "Cancellation policy confirmation is required";
   }
 
-  if (!payload.travelFeePolicy) {
+  if (!normalizedPayload.travelFeePolicy) {
     errors.travelFeePolicy = "Travel fee policy confirmation is required";
   }
 

@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { getAdminCookieName, isValidAdminSession } from "@/lib/admin-auth";
+import { getAdminCookieName, isAdminSessionReady } from "@/lib/admin-auth";
 import { getSquarePricingCatalog, updateSquarePrices, type SquarePriceUpdate } from "@/lib/square/pricing";
 
 export const runtime = "nodejs";
@@ -52,7 +52,7 @@ export async function PUT(request: Request) {
 
 async function isAuthenticated() {
   const cookieStore = await cookies();
-  return isValidAdminSession(cookieStore.get(getAdminCookieName())?.value);
+  return isAdminSessionReady(cookieStore.get(getAdminCookieName())?.value);
 }
 
 function parseUpdates(body: PricingRequestBody | null): SquarePriceUpdate[] {

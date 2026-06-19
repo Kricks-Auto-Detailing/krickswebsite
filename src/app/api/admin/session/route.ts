@@ -1,18 +1,19 @@
 import { cookies } from "next/headers";
-import { createAdminSessionValue, getAdminCookieName, isAdminPassword, isValidAdminSession } from "@/lib/admin-auth";
+import { createAdminSessionValue, getAdminCookieName, isAdminPassword, isAdminPasswordChangeRequired, isValidAdminSession } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 
 export async function GET() {
   const cookieStore = await cookies();
   const authenticated = isValidAdminSession(cookieStore.get(getAdminCookieName())?.value);
-  return Response.json({ authenticated });
+  const passwordChangeRequired = authenticated ? await isAdminPasswordChangeRequired() : false;
+  return Response.json({ authenticated, passwordChangeRequired });
 }
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as { password?: string } | null;
 
-  if (!isAdminPassword(body?.password ?? "")) {
+  if (!(await isAdminPassword(body?.password ?? ""))) {
     return Response.json({ ok: false, message: "Invalid admin password." }, { status: 401 });
   }
 
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
     maxAge: 60 * 60 * 12,
   });
 
-  return Response.json({ ok: true });
+  return Response.json({ ok: true, passwordChangeRequired: await isAdminPasswordChangeRequired() });
 }
 
 export async function DELETE() {

@@ -22,6 +22,7 @@
 
 # runtime gallery uploads
 /data/gallery-items.json
+/data/admin-credentials.json
 /public/uploads/
 
 # misc

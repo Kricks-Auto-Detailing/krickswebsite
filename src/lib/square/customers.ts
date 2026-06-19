@@ -1,4 +1,4 @@
-import type { BookingPayload } from "@/lib/booking";
+import { normalizeEmail, type BookingPayload } from "@/lib/booking";
 import { squareRequest } from "./client";
 import type { BookingHistoryEntry, SquareCustomer } from "./types";
 
@@ -11,15 +11,16 @@ type CustomerResponse = {
 };
 
 export async function upsertSquareCustomer(payload: BookingPayload, serviceTitle: string, addOnLabels: string[]) {
+  const email = normalizeEmail(payload.email);
   const phone = normalizeUsPhone(payload.phone);
-  const existing = await findCustomer(payload.email, phone);
+  const existing = await findCustomer(email, phone);
   const historyEntry = buildHistoryEntry(payload, serviceTitle, addOnLabels);
 
   if (existing) {
-    return updateCustomer(existing, payload, historyEntry, phone);
+    return updateCustomer(existing, payload, historyEntry, email, phone);
   }
 
-  return createCustomer(payload, historyEntry, phone);
+  return createCustomer(payload, historyEntry, email, phone);
 }
 
 export function buildHistoryEntry(payload: BookingPayload, serviceTitle: string, addOnLabels: string[]): BookingHistoryEntry {
@@ -61,7 +62,7 @@ async function searchCustomers({ email, phone }: { email?: string; phone?: strin
   return response.customers?.[0];
 }
 
-async function createCustomer(payload: BookingPayload, historyEntry: BookingHistoryEntry, phone: string) {
+async function createCustomer(payload: BookingPayload, historyEntry: BookingHistoryEntry, email: string, phone: string) {
   const nameParts = splitName(payload.fullName);
   const response = await squareRequest<CustomerResponse>("/v2/customers", {
     method: "POST",
@@ -69,7 +70,7 @@ async function createCustomer(payload: BookingPayload, historyEntry: BookingHist
       idempotency_key: crypto.randomUUID(),
       given_name: nameParts.givenName,
       family_name: nameParts.familyName,
-      email_address: payload.email,
+      email_address: email,
       phone_number: phone,
       address: {
         address_line_1: payload.address,
@@ -86,14 +87,14 @@ async function createCustomer(payload: BookingPayload, historyEntry: BookingHist
   return response.customer;
 }
 
-async function updateCustomer(customer: SquareCustomer, payload: BookingPayload, historyEntry: BookingHistoryEntry, phone: string) {
+async function updateCustomer(customer: SquareCustomer, payload: BookingPayload, historyEntry: BookingHistoryEntry, email: string, phone: string) {
   const nameParts = splitName(payload.fullName);
   const response = await squareRequest<CustomerResponse>(`/v2/customers/${encodeURIComponent(customer.id)}`, {
     method: "PUT",
     body: {
       given_name: customer.given_name || nameParts.givenName,
       family_name: customer.family_name || nameParts.familyName,
-      email_address: payload.email || customer.email_address,
+      email_address: email || customer.email_address,
       phone_number: phone || customer.phone_number,
       address: {
         address_line_1: payload.address,
@@ -119,6 +120,7 @@ function buildCustomerNote(existingNote: string | undefined, historyEntry: Booki
     `Add-ons: ${historyEntry.addOns.join(", ") || "None"}`,
     `Vehicle: ${historyEntry.vehicle}`,
     `Address: ${historyEntry.address}`,
+    `Created from: kricksautodetailing.com booking form`,
     `Notes: ${historyEntry.notes}`,
   ].join("\n");
 

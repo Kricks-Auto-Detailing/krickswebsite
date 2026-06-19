@@ -2,7 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { addOns, getServiceById, getServiceCategoryLabel, services, serviceCategorySections, type Service } from "@/lib/services";
-import { BookingPayload, getServiceTodayDate, isLikelyOutsideCoreRadius, validateBooking } from "@/lib/booking";
+import { BookingPayload, getServiceTodayDate, isLikelyOutsideCoreRadius, normalizeBookingPayload, validateBooking } from "@/lib/booking";
 
 type AddOnOption = {
   id: string;
@@ -63,7 +63,8 @@ export function BookingForm({ initialServiceId, serviceOptions = services, addOn
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const validation = validateBooking(payload, {
+    const normalizedPayload = normalizeBookingPayload(payload);
+    const validation = validateBooking(normalizedPayload, {
       serviceIds: serviceOptions.map((service) => service.id),
       addOnIds: addOnOptions.map((addOn) => addOn.id),
     });
@@ -82,7 +83,7 @@ export function BookingForm({ initialServiceId, serviceOptions = services, addOn
       const response = await fetch("/api/booking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(normalizedPayload),
       });
       const result = (await response.json()) as {
         ok?: boolean;
