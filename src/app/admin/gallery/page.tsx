@@ -5,6 +5,7 @@ import { SectionHeader } from "@/components/SectionHeader";
 import { getAdminCookieName, isValidAdminSession } from "@/lib/admin-auth";
 import { getUploadedGalleryItems } from "@/lib/gallery-store";
 import { galleryCategoryOptions } from "@/lib/services";
+import { getSquarePricingCatalog } from "@/lib/square/pricing";
 
 export const metadata: Metadata = {
   title: "Gallery Admin",
@@ -19,6 +20,7 @@ export default async function AdminGalleryPage() {
   const cookieStore = await cookies();
   const initialAuthenticated = isValidAdminSession(cookieStore.get(getAdminCookieName())?.value);
   const initialItems = initialAuthenticated ? await getUploadedGalleryItems({ includeDrafts: true }) : [];
+  const initialPricingCatalog = initialAuthenticated ? await getInitialPricingCatalog() : null;
 
   return (
     <>
@@ -34,9 +36,22 @@ export default async function AdminGalleryPage() {
 
       <section className="bg-[#050505] px-4 py-16 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <AdminGalleryManager categories={galleryCategoryOptions} initialAuthenticated={initialAuthenticated} initialItems={initialItems} />
+          <AdminGalleryManager
+            categories={galleryCategoryOptions}
+            initialAuthenticated={initialAuthenticated}
+            initialItems={initialItems}
+            initialPricingCatalog={initialPricingCatalog}
+          />
         </div>
       </section>
     </>
   );
+}
+
+async function getInitialPricingCatalog() {
+  try {
+    return await getSquarePricingCatalog();
+  } catch {
+    return null;
+  }
 }

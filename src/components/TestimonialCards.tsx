@@ -15,12 +15,12 @@ const confidenceCards = [
 
 export function TestimonialCards() {
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-3 sm:gap-4 md:grid-cols-3">
       {confidenceCards.map((card) => (
-        <article key={card.title} className="border border-white/10 bg-white/[0.04] p-6 transition hover:border-[#6D28D9]">
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-[#FACC15]">Detail standard</p>
-          <h3 className="mt-4 text-xl font-black uppercase text-white">{card.title}</h3>
-          <p className="mt-4 text-sm leading-7 text-zinc-300">{card.text}</p>
+        <article key={card.title} className="border border-white/10 bg-white/[0.04] p-4 transition hover:border-[#6D28D9] sm:p-6">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#FACC15] sm:text-xs sm:tracking-[0.22em]">Detail standard</p>
+          <h3 className="mt-3 text-lg font-black uppercase text-white sm:mt-4 sm:text-xl">{card.title}</h3>
+          <p className="mt-3 text-sm leading-6 text-zinc-300 sm:mt-4 sm:leading-7">{card.text}</p>
         </article>
       ))}
     </div>

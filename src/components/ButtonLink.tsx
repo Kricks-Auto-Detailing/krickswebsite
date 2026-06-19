@@ -20,7 +20,7 @@ export function ButtonLink({ href, children, variant = "primary", className = ""
   return (
     <Link
       href={href}
-      className={`group inline-flex min-h-12 items-center justify-center gap-2 skew-x-[-10deg] px-6 py-3 text-sm font-black uppercase tracking-[0.16em] transition duration-300 ${styles[variant]} ${className}`}
+      className={`group inline-flex min-h-11 items-center justify-center gap-2 skew-x-[-10deg] px-5 py-3 text-xs font-black uppercase tracking-[0.14em] transition duration-300 sm:min-h-12 sm:px-6 sm:text-sm sm:tracking-[0.16em] ${styles[variant]} ${className}`}
     >
       <span className="skew-x-[10deg]">{children}</span>
     </Link>

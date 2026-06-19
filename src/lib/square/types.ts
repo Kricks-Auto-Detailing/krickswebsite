@@ -12,6 +12,9 @@ export type SquareCatalogObject = {
   version?: number;
   updated_at?: string;
   is_deleted?: boolean;
+  present_at_all_locations?: boolean;
+  present_at_location_ids?: string[];
+  absent_at_location_ids?: string[];
   item_data?: {
     name?: string;
     description?: string;
@@ -24,6 +27,7 @@ export type SquareCatalogObject = {
     name?: string;
     item_id?: string;
     ordinal?: number;
+    pricing_type?: string;
     price_money?: SquareMoney;
     service_duration?: number;
     available_for_booking?: boolean;

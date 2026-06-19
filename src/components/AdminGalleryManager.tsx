@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useState } from "react";
 
 type CategoryOption = {
   slug: string;
@@ -19,25 +19,72 @@ type UploadedItem = {
   createdAt: string;
 };
 
+type PricingVariation = {
+  id: string;
+  name: string;
+  amountCents: number;
+  currency: string;
+};
+
+type PricingItem = {
+  id: string;
+  name: string;
+  categoryName: string;
+  variations: PricingVariation[];
+};
+
+type PricingCatalog = {
+  source: "square" | "unconfigured";
+  sections: Array<{
+    name: string;
+    items: PricingItem[];
+  }>;
+};
+
 type AdminGalleryManagerProps = {
   categories: CategoryOption[];
   initialAuthenticated: boolean;
   initialItems: UploadedItem[];
+  initialPricingCatalog: PricingCatalog | null;
 };
 
-export function AdminGalleryManager({ categories, initialAuthenticated, initialItems }: AdminGalleryManagerProps) {
+export function AdminGalleryManager({ categories, initialAuthenticated, initialItems, initialPricingCatalog }: AdminGalleryManagerProps) {
   const [authenticated, setAuthenticated] = useState(initialAuthenticated);
   const [password, setPassword] = useState("");
   const [items, setItems] = useState<UploadedItem[]>(initialItems);
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [pricingCatalog, setPricingCatalog] = useState<PricingCatalog | null>(initialPricingCatalog);
+  const [priceValues, setPriceValues] = useState<Record<string, string>>(() => buildPriceValues(initialPricingCatalog));
+  const [pricingMessage, setPricingMessage] = useState("");
+  const [pricingStatus, setPricingStatus] = useState<"idle" | "loading" | "saving" | "error">("idle");
 
-  async function loadItems() {
+  const applyPricingCatalog = useCallback((catalog: PricingCatalog) => {
+    setPricingCatalog(catalog);
+    setPriceValues(buildPriceValues(catalog));
+  }, []);
+
+  const loadItems = useCallback(async () => {
     const response = await fetch("/api/admin/gallery");
     if (!response.ok) return;
     const result = (await response.json()) as { items?: UploadedItem[] };
     setItems(result.items ?? []);
-  }
+  }, []);
+
+  const loadPricing = useCallback(async () => {
+    setPricingStatus("loading");
+    const response = await fetch("/api/admin/pricing");
+    const result = (await response.json().catch(() => null)) as { ok?: boolean; message?: string; catalog?: PricingCatalog } | null;
+
+    if (!response.ok || !result?.ok || !result.catalog) {
+      setPricingStatus("error");
+      setPricingMessage(result?.message ?? "Square pricing could not be loaded.");
+      return;
+    }
+
+    applyPricingCatalog(result.catalog);
+    setPricingStatus("idle");
+  }, [applyPricingCatalog]);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -60,6 +107,7 @@ export function AdminGalleryManager({ categories, initialAuthenticated, initialI
     setPassword("");
     setStatus("idle");
     await loadItems();
+    await loadPricing();
   }
 
   async function handleUpload(event: FormEvent<HTMLFormElement>) {
@@ -89,6 +137,48 @@ export function AdminGalleryManager({ categories, initialAuthenticated, initialI
     await loadItems();
   }
 
+  async function handlePricingSave(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!pricingCatalog) return;
+
+    const updates = pricingCatalog.sections
+      .flatMap((section) => section.items)
+      .flatMap((item) => item.variations)
+      .map((variation) => ({
+        variationId: variation.id,
+        amountCents: dollarsToCents(priceValues[variation.id]),
+        originalAmountCents: variation.amountCents,
+      }))
+      .filter((update) => Number.isInteger(update.amountCents) && update.amountCents !== update.originalAmountCents)
+      .map(({ variationId, amountCents }) => ({ variationId, amountCents }));
+
+    if (!updates.length) {
+      setPricingStatus("idle");
+      setPricingMessage("No price changes to save.");
+      return;
+    }
+
+    setPricingStatus("saving");
+    setPricingMessage("");
+
+    const response = await fetch("/api/admin/pricing", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ updates }),
+    });
+    const result = (await response.json().catch(() => null)) as { ok?: boolean; message?: string; catalog?: PricingCatalog } | null;
+
+    if (!response.ok || !result?.ok || !result.catalog) {
+      setPricingStatus("error");
+      setPricingMessage(result?.message ?? "Square pricing could not be saved.");
+      return;
+    }
+
+    applyPricingCatalog(result.catalog);
+    setPricingStatus("idle");
+    setPricingMessage("Prices saved to Square Item Library.");
+  }
+
   if (!authenticated) {
     return (
       <form onSubmit={handleLogin} className="grid max-w-xl gap-5 border border-[#6D28D9]/50 bg-[#080808] p-6 shadow-[0_0_50px_rgba(109,40,217,0.18)]">
@@ -109,8 +199,9 @@ export function AdminGalleryManager({ categories, initialAuthenticated, initialI
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-      <form onSubmit={handleUpload} className="grid content-start gap-5 border border-[#6D28D9]/50 bg-[#080808] p-6 shadow-[0_0_50px_rgba(109,40,217,0.18)]">
+    <div className="grid gap-8">
+      <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+        <form onSubmit={handleUpload} className="grid content-start gap-5 border border-[#6D28D9]/50 bg-[#080808] p-6 shadow-[0_0_50px_rgba(109,40,217,0.18)]">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.22em] text-[#FACC15]">New before / after set</p>
           <h2 className="mt-2 text-2xl font-black uppercase text-white">Upload gallery photos</h2>
@@ -164,34 +255,121 @@ export function AdminGalleryManager({ categories, initialAuthenticated, initialI
         <button className="min-h-12 skew-x-[-10deg] bg-[#FACC15] px-5 py-3 text-sm font-black uppercase tracking-[0.16em] text-black transition hover:bg-white disabled:opacity-60" disabled={status === "loading"}>
           <span className="block skew-x-[10deg]">{status === "loading" ? "Uploading" : "Upload Set"}</span>
         </button>
-      </form>
+        </form>
 
-      <section className="border border-white/10 bg-white/[0.04] p-6">
-        <p className="text-xs font-black uppercase tracking-[0.22em] text-[#FACC15]">Uploaded sets</p>
-        <div className="mt-5 grid gap-4">
-          {items.length ? (
-            items.map((item) => (
-              <article key={item.id} className="grid gap-4 border border-white/10 bg-[#080808] p-4 sm:grid-cols-[120px_1fr]">
-                <div className="grid grid-cols-2 overflow-hidden border border-[#6D28D9]/40">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={item.beforeSrc} alt="" className="h-24 w-full object-cover" />
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={item.afterSrc} alt="" className="h-24 w-full object-cover" />
-                </div>
-                <div>
-                  <p className="text-lg font-black uppercase text-white">{item.title}</p>
-                  <p className="mt-1 text-sm text-zinc-400">{item.categorySlug} / {item.published ? "Published" : "Draft"}</p>
-                  <p className="mt-2 text-xs uppercase tracking-[0.16em] text-[#FACC15]">
-                    {item.beforeLabel} / {item.afterLabel}
-                  </p>
-                </div>
-              </article>
-            ))
-          ) : (
-            <p className="text-sm text-zinc-400">No uploaded gallery sets yet.</p>
-          )}
+        <section className="border border-white/10 bg-white/[0.04] p-6">
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-[#FACC15]">Uploaded sets</p>
+          <div className="mt-5 grid gap-4">
+            {items.length ? (
+              items.map((item) => (
+                <article key={item.id} className="grid gap-4 border border-white/10 bg-[#080808] p-4 sm:grid-cols-[120px_1fr]">
+                  <div className="grid grid-cols-2 overflow-hidden border border-[#6D28D9]/40">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={item.beforeSrc} alt="" className="h-24 w-full object-cover" />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={item.afterSrc} alt="" className="h-24 w-full object-cover" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-black uppercase text-white">{item.title}</p>
+                    <p className="mt-1 text-sm text-zinc-400">{item.categorySlug} / {item.published ? "Published" : "Draft"}</p>
+                    <p className="mt-2 text-xs uppercase tracking-[0.16em] text-[#FACC15]">
+                      {item.beforeLabel} / {item.afterLabel}
+                    </p>
+                  </div>
+                </article>
+              ))
+            ) : (
+              <p className="text-sm text-zinc-400">No uploaded gallery sets yet.</p>
+            )}
+          </div>
+        </section>
+      </div>
+
+      <form onSubmit={handlePricingSave} className="border border-[#6D28D9]/50 bg-[#080808] p-6 shadow-[0_0_50px_rgba(109,40,217,0.18)]">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-[#FACC15]">Square pricing</p>
+            <h2 className="mt-2 text-2xl font-black uppercase text-white">Service price manager</h2>
+            <p className="mt-2 max-w-2xl text-sm text-zinc-400">
+              Update the prices customers see on the site. Changes save directly to the connected Square Item Library.
+            </p>
+          </div>
+          <button className="min-h-12 skew-x-[-10deg] bg-[#FACC15] px-5 py-3 text-sm font-black uppercase tracking-[0.16em] text-black transition hover:bg-white disabled:opacity-60" disabled={pricingStatus === "saving" || pricingStatus === "loading" || pricingCatalog?.source !== "square"}>
+            <span className="block skew-x-[10deg]">{pricingStatus === "saving" ? "Saving" : "Save Prices"}</span>
+          </button>
         </div>
-      </section>
+
+        {pricingMessage ? <p className="mt-4 text-sm font-bold text-[#FACC15]">{pricingMessage}</p> : null}
+
+        {pricingCatalog?.source === "unconfigured" ? (
+          <p className="mt-6 border border-white/10 bg-white/[0.04] p-4 text-sm text-zinc-300">
+            Square is not configured on this server, so prices cannot be edited here yet.
+          </p>
+        ) : null}
+
+        {pricingStatus === "loading" && !pricingCatalog ? (
+          <p className="mt-6 text-sm text-zinc-400">Loading Square prices...</p>
+        ) : null}
+
+        {pricingCatalog?.sections.length ? (
+          <div className="mt-6 grid gap-5">
+            {pricingCatalog.sections.map((section) => (
+              <section key={section.name} className="border border-white/10 bg-white/[0.04] p-4">
+                <h3 className="text-lg font-black uppercase text-white">{section.name}</h3>
+                <div className="mt-4 grid gap-4">
+                  {section.items.map((item) => (
+                    <article key={item.id} className="border border-[#6D28D9]/40 bg-[#050505] p-4">
+                      <p className="text-sm font-black uppercase tracking-[0.16em] text-[#FACC15]">{item.name}</p>
+                      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                        {item.variations.map((variation) => (
+                          <label key={variation.id} className="grid gap-2">
+                            <span className="text-xs font-black uppercase tracking-[0.16em] text-zinc-300">{variation.name}</span>
+                            <span className="flex items-center border border-white/10 bg-[#0d0d0d] focus-within:border-[#FACC15]">
+                              <span className="px-3 text-sm font-black text-[#FACC15]">$</span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={priceValues[variation.id] ?? ""}
+                                onChange={(event) => setPriceValues((current) => ({ ...current, [variation.id]: event.target.value }))}
+                                className="min-h-12 w-full bg-transparent px-2 py-3 text-sm font-bold text-white outline-none"
+                                aria-label={`${item.name} ${variation.name} price`}
+                              />
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ))
+            }
+          </div>
+        ) : null}
+      </form>
     </div>
   );
+}
+
+function formatDollars(amountCents: number) {
+  return (amountCents / 100).toFixed(amountCents % 100 === 0 ? 0 : 2);
+}
+
+function buildPriceValues(catalog: PricingCatalog | null) {
+  if (!catalog) return {};
+
+  return Object.fromEntries(
+    catalog.sections.flatMap((section) =>
+      section.items.flatMap((item) =>
+        item.variations.map((variation) => [variation.id, formatDollars(variation.amountCents)]),
+      ),
+    ),
+  );
+}
+
+function dollarsToCents(value: string | undefined) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount < 0) return Number.NaN;
+  return Math.round(amount * 100);
 }

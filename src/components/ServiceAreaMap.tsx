@@ -43,8 +43,8 @@ export function ServiceAreaMap() {
   const radiusPercent = (serviceRadiusPixels() / (tileColumns * tileSize)) * 100;
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_0.8fr] lg:items-stretch">
-      <div className="relative min-h-[380px] overflow-hidden border border-[#6D28D9]/50 bg-[#080808] shadow-[0_0_50px_rgba(109,40,217,0.22)]">
+    <div className="grid gap-6 sm:gap-8 lg:grid-cols-[1fr_0.8fr] lg:items-stretch">
+      <div className="relative min-h-[300px] overflow-hidden border border-[#6D28D9]/50 bg-[#080808] shadow-[0_0_50px_rgba(109,40,217,0.22)] sm:min-h-[380px]">
         <div className="absolute inset-0 grid grid-cols-6 grid-rows-4 opacity-75 saturate-[0.55] contrast-125 brightness-[0.55]">
           {Array.from({ length: tileRows }).map((_, row) =>
             Array.from({ length: tileColumns }).map((__, column) => {
@@ -100,37 +100,37 @@ export function ServiceAreaMap() {
           );
         })}
 
-        <div className="absolute bottom-5 left-5 border border-white/10 bg-black/80 px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] text-zinc-200 backdrop-blur">
+        <div className="absolute bottom-4 left-4 border border-white/10 bg-black/80 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-200 backdrop-blur sm:bottom-5 sm:left-5 sm:px-4 sm:py-3 sm:text-xs sm:tracking-[0.14em]">
           Real map / 30-minute mobile radius
         </div>
         <a
           href="https://www.openstreetmap.org/#map=10/40.8306/-84.9291"
           target="_blank"
           rel="noreferrer"
-          className="absolute bottom-5 right-5 border border-white/10 bg-black/80 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-400 transition hover:text-[#FACC15]"
+          className="absolute bottom-4 right-4 border border-white/10 bg-black/80 px-2 py-2 text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-400 transition hover:text-[#FACC15] sm:bottom-5 sm:right-5 sm:px-3 sm:text-[10px] sm:tracking-[0.14em]"
         >
           Map data OpenStreetMap
         </a>
       </div>
 
       <div className="flex flex-col justify-center">
-        <p className="text-xs font-black uppercase tracking-[0.26em] text-[#FACC15]">Service area</p>
-        <h2 className="mt-3 text-3xl font-black uppercase leading-tight text-white sm:text-4xl">
+        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#FACC15] sm:text-xs sm:tracking-[0.26em]">Service area</p>
+        <h2 className="mt-2 text-2xl font-black uppercase leading-tight text-white sm:mt-3 sm:text-4xl">
           We come to you around Decatur.
         </h2>
-        <p className="mt-5 text-base leading-8 text-zinc-300">
+        <p className="mt-3 text-sm leading-7 text-zinc-300 sm:mt-5 sm:text-base sm:leading-8">
           Krick&apos;s Auto Detailing serves Decatur, Indiana and nearby communities within roughly 30 minutes. Addresses
           outside that radius can still be requested with an additional $20 travel fee.
         </p>
-        <div className="mt-6 grid gap-3 text-sm text-zinc-300">
-          <p className="border-l-2 border-[#FACC15] bg-white/[0.04] p-4">Mobile appointments run 9:00 AM - 9:00 PM.</p>
-          <p className="border-l-2 border-[#6D28D9] bg-white/[0.04] p-4">No appointment start times after 8:00 PM.</p>
+        <div className="mt-4 grid gap-2 text-sm text-zinc-300 sm:mt-6 sm:gap-3">
+          <p className="border-l-2 border-[#FACC15] bg-white/[0.04] p-3 sm:p-4">Mobile appointments run 9:00 AM - 9:00 PM.</p>
+          <p className="border-l-2 border-[#6D28D9] bg-white/[0.04] p-3 sm:p-4">No appointment start times after 8:00 PM.</p>
         </div>
-        <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-6 sm:grid-cols-3">
           {serviceCities.map((city) => (
             <div
               key={`${city.name}-${city.state}-list`}
-              className={`border p-3 ${
+              className={`border p-2.5 sm:p-3 ${
                 city.type === "home"
                   ? "border-[#FACC15]/70 bg-[#FACC15]/10"
                   : city.type === "borderline"
@@ -138,10 +138,10 @@ export function ServiceAreaMap() {
                     : "border-[#6D28D9]/45 bg-[#6D28D9]/10"
               }`}
             >
-              <p className="text-xs font-black uppercase tracking-[0.14em] text-white">
+              <p className="text-[10px] font-black uppercase tracking-[0.12em] text-white sm:text-xs sm:tracking-[0.14em]">
                 {city.name}, {city.state}
               </p>
-              <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-zinc-500">{city.note}</p>
+              <p className="mt-1 text-[10px] uppercase tracking-[0.1em] text-zinc-500 sm:text-[11px] sm:tracking-[0.12em]">{city.note}</p>
             </div>
           ))}
         </div>
