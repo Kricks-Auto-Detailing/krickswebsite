@@ -20,7 +20,7 @@ export function getAdminCookieName() {
 export async function isAdminPassword(value: string) {
   if (!value) return false;
 
-  const storedCredentials = await readStoredCredentials();
+  const storedCredentials = await readActiveCredentials();
   if (storedCredentials?.passwordHash && storedCredentials.salt) {
     return verifyPassword(value, storedCredentials);
   }
@@ -30,10 +30,10 @@ export async function isAdminPassword(value: string) {
 }
 
 export async function isAdminPasswordChangeRequired() {
-  const forcePasswordChange = process.env.ADMIN_FORCE_PASSWORD_CHANGE !== "false";
+  const forcePasswordChange = process.env.ADMIN_FORCE_PASSWORD_CHANGE === "true";
   if (!forcePasswordChange) return false;
 
-  const storedCredentials = await readStoredCredentials();
+  const storedCredentials = await readActiveCredentials();
   return !storedCredentials?.passwordHash || !storedCredentials.salt;
 }
 
@@ -50,11 +50,16 @@ export async function setAdminPassword(password: string) {
 
   const salt = randomBytes(16).toString("base64url");
   const passwordHash = await hashPassword(trimmedPassword, salt);
-  await writeStoredCredentials({
+  await writeStoredCredentialsFile({
     passwordHash,
     salt,
     updatedAt: new Date().toISOString(),
   });
+
+  const storedCredentials = await readStoredCredentialsFile();
+  if (!(await verifyPassword(trimmedPassword, storedCredentials ?? {}))) {
+    throw new Error("Admin password could not be verified after saving. Check that the host allows persistent file storage or use ADMIN_PASSWORD_HASH and ADMIN_PASSWORD_SALT.");
+  }
 }
 
 export function createAdminSessionValue() {
@@ -99,7 +104,11 @@ async function hashPassword(password: string, salt: string) {
   return derivedKey.toString("base64url");
 }
 
-async function readStoredCredentials(): Promise<StoredAdminCredentials | null> {
+async function readActiveCredentials(): Promise<StoredAdminCredentials | null> {
+  return (await readStoredCredentialsFile()) ?? readEnvStoredCredentials();
+}
+
+async function readStoredCredentialsFile(): Promise<StoredAdminCredentials | null> {
   try {
     const raw = await readFile(credentialsPath, "utf8");
     const parsed = JSON.parse(raw) as StoredAdminCredentials;
@@ -109,7 +118,20 @@ async function readStoredCredentials(): Promise<StoredAdminCredentials | null> {
   }
 }
 
-async function writeStoredCredentials(credentials: StoredAdminCredentials) {
+function readEnvStoredCredentials(): StoredAdminCredentials | null {
+  const passwordHash = process.env.ADMIN_PASSWORD_HASH;
+  const salt = process.env.ADMIN_PASSWORD_SALT;
+
+  if (!passwordHash || !salt) return null;
+
+  return {
+    passwordHash,
+    salt,
+    updatedAt: "env",
+  };
+}
+
+async function writeStoredCredentialsFile(credentials: StoredAdminCredentials) {
   await mkdir(path.dirname(credentialsPath), { recursive: true });
   await writeFile(credentialsPath, `${JSON.stringify(credentials, null, 2)}\n`, "utf8");
 }

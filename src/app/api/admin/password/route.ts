@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { getAdminCookieName, isValidAdminSession, setAdminPassword } from "@/lib/admin-auth";
+import { getAdminCookieName, isAdminPasswordChangeRequired, isValidAdminSession, setAdminPassword } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
 
   try {
     await setAdminPassword(newPassword);
-    return Response.json({ ok: true, passwordChangeRequired: false });
+    return Response.json({ ok: true, passwordChangeRequired: await isAdminPasswordChangeRequired() });
   } catch (error) {
     return Response.json(
       { ok: false, message: error instanceof Error ? error.message : "Password could not be updated." },
