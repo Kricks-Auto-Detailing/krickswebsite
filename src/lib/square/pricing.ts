@@ -147,11 +147,16 @@ async function listCatalogObjects() {
       },
     });
 
-    objects.push(...(response.objects ?? []), ...(response.related_objects ?? []));
+    objects.push(...expandCatalogObjects([...(response.objects ?? []), ...(response.related_objects ?? [])]));
     cursor = response.cursor;
   } while (cursor);
 
   return Array.from(new Map(objects.map((object) => [object.id, object])).values());
+}
+
+function expandCatalogObjects(objects: SquareCatalogObject[]) {
+  const embeddedVariations = objects.flatMap((object) => object.item_data?.variations ?? []);
+  return [...objects, ...embeddedVariations];
 }
 
 function mapPricingItem(item: SquareCatalogObject, categories: Map<string, string>) {
