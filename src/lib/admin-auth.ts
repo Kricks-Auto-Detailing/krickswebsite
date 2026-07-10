@@ -1,4 +1,5 @@
 import { createHmac, randomBytes, scrypt as scryptCallback, timingSafeEqual } from "crypto";
+import { get, put } from "@vercel/blob";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 import { promisify } from "util";
@@ -6,6 +7,7 @@ import { promisify } from "util";
 const cookieName = "kricks_admin_session";
 const scrypt = promisify(scryptCallback);
 const credentialsPath = path.join(process.cwd(), "data", "admin-credentials.json");
+const blobCredentialsPath = "admin/admin-credentials.json";
 
 type StoredAdminCredentials = {
   passwordHash?: string;
@@ -50,13 +52,13 @@ export async function setAdminPassword(password: string) {
 
   const salt = randomBytes(16).toString("base64url");
   const passwordHash = await hashPassword(trimmedPassword, salt);
-  await writeStoredCredentialsFile({
+  await writeStoredCredentials({
     passwordHash,
     salt,
     updatedAt: new Date().toISOString(),
   });
 
-  const storedCredentials = await readStoredCredentialsFile();
+  const storedCredentials = await readStoredCredentials();
   if (!(await verifyPassword(trimmedPassword, storedCredentials ?? {}))) {
     throw new Error("Admin password could not be verified after saving. Check that the host allows persistent file storage or use ADMIN_PASSWORD_HASH and ADMIN_PASSWORD_SALT.");
   }
@@ -105,10 +107,14 @@ async function hashPassword(password: string, salt: string) {
 }
 
 async function readActiveCredentials(): Promise<StoredAdminCredentials | null> {
-  return (await readStoredCredentialsFile()) ?? readEnvStoredCredentials();
+  return (await readStoredCredentials()) ?? readEnvStoredCredentials();
 }
 
-async function readStoredCredentialsFile(): Promise<StoredAdminCredentials | null> {
+async function readStoredCredentials(): Promise<StoredAdminCredentials | null> {
+  if (isBlobStorageEnabled()) {
+    return readBlobStoredCredentials();
+  }
+
   try {
     const raw = await readFile(credentialsPath, "utf8");
     const parsed = JSON.parse(raw) as StoredAdminCredentials;
@@ -131,7 +137,33 @@ function readEnvStoredCredentials(): StoredAdminCredentials | null {
   };
 }
 
-async function writeStoredCredentialsFile(credentials: StoredAdminCredentials) {
+async function writeStoredCredentials(credentials: StoredAdminCredentials) {
+  if (isBlobStorageEnabled()) {
+    await put(blobCredentialsPath, JSON.stringify(credentials, null, 2), {
+      access: "public",
+      allowOverwrite: true,
+      contentType: "application/json",
+    });
+    return;
+  }
+
   await mkdir(path.dirname(credentialsPath), { recursive: true });
   await writeFile(credentialsPath, `${JSON.stringify(credentials, null, 2)}\n`, "utf8");
+}
+
+async function readBlobStoredCredentials(): Promise<StoredAdminCredentials | null> {
+  try {
+    const result = await get(blobCredentialsPath, { access: "public", useCache: false });
+    if (!result?.stream) return null;
+
+    const raw = await new Response(result.stream).text();
+    const parsed = JSON.parse(raw) as StoredAdminCredentials;
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function isBlobStorageEnabled() {
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
 }

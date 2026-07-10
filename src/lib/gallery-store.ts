@@ -1,3 +1,4 @@
+import { get, put } from "@vercel/blob";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 import { galleryCategories, type GalleryCategory, type GalleryPair } from "@/lib/services";
@@ -18,6 +19,7 @@ type GalleryData = {
 };
 
 const dataPath = path.join(process.cwd(), "data", "gallery-items.json");
+const blobDataPath = "gallery/gallery-items.json";
 
 export async function getUploadedGalleryItems({ includeDrafts = false }: { includeDrafts?: boolean } = {}) {
   const data = await readGalleryData();
@@ -63,6 +65,10 @@ export async function getPublicBeforeAfterPairs() {
 }
 
 async function readGalleryData(): Promise<GalleryData> {
+  if (isBlobStorageEnabled()) {
+    return readBlobGalleryData();
+  }
+
   try {
     const raw = await readFile(dataPath, "utf8");
     const parsed = JSON.parse(raw) as GalleryData;
@@ -73,8 +79,34 @@ async function readGalleryData(): Promise<GalleryData> {
 }
 
 async function writeGalleryData(data: GalleryData) {
+  if (isBlobStorageEnabled()) {
+    await put(blobDataPath, JSON.stringify(data, null, 2), {
+      access: "public",
+      allowOverwrite: true,
+      contentType: "application/json",
+    });
+    return;
+  }
+
   await mkdir(path.dirname(dataPath), { recursive: true });
   await writeFile(dataPath, `${JSON.stringify(data, null, 2)}\n`, "utf8");
+}
+
+async function readBlobGalleryData(): Promise<GalleryData> {
+  try {
+    const result = await get(blobDataPath, { access: "public", useCache: false });
+    if (!result?.stream) return { items: [] };
+
+    const raw = await new Response(result.stream).text();
+    const parsed = JSON.parse(raw) as GalleryData;
+    return { items: Array.isArray(parsed.items) ? parsed.items : [] };
+  } catch {
+    return { items: [] };
+  }
+}
+
+function isBlobStorageEnabled() {
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
 }
 
 function mergeCategoryUploads(category: GalleryCategory, uploads: UploadedGalleryItem[]): GalleryCategory {
