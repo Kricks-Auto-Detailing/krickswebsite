@@ -98,12 +98,12 @@ async function saveGalleryFile(file: File, name: string) {
 
   if (isBlobStorageEnabled()) {
     const blob = await put(`gallery/${filename}`, file, {
-      access: "public",
+      access: "private",
       allowOverwrite: true,
       contentType: file.type,
     });
 
-    return blob.url;
+    return `/api/gallery/image?path=${encodeURIComponent(blob.pathname)}`;
   }
 
   await mkdir(uploadDir, { recursive: true });

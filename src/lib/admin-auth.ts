@@ -140,7 +140,7 @@ function readEnvStoredCredentials(): StoredAdminCredentials | null {
 async function writeStoredCredentials(credentials: StoredAdminCredentials) {
   if (isBlobStorageEnabled()) {
     await put(blobCredentialsPath, JSON.stringify(credentials, null, 2), {
-      access: "public",
+      access: "private",
       allowOverwrite: true,
       contentType: "application/json",
     });
@@ -153,7 +153,7 @@ async function writeStoredCredentials(credentials: StoredAdminCredentials) {
 
 async function readBlobStoredCredentials(): Promise<StoredAdminCredentials | null> {
   try {
-    const result = await get(blobCredentialsPath, { access: "public", useCache: false });
+    const result = await get(blobCredentialsPath, { access: "private", useCache: false });
     if (!result?.stream) return null;
 
     const raw = await new Response(result.stream).text();

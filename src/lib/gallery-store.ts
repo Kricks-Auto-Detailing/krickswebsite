@@ -81,7 +81,7 @@ async function readGalleryData(): Promise<GalleryData> {
 async function writeGalleryData(data: GalleryData) {
   if (isBlobStorageEnabled()) {
     await put(blobDataPath, JSON.stringify(data, null, 2), {
-      access: "public",
+      access: "private",
       allowOverwrite: true,
       contentType: "application/json",
     });
@@ -94,7 +94,7 @@ async function writeGalleryData(data: GalleryData) {
 
 async function readBlobGalleryData(): Promise<GalleryData> {
   try {
-    const result = await get(blobDataPath, { access: "public", useCache: false });
+    const result = await get(blobDataPath, { access: "private", useCache: false });
     if (!result?.stream) return { items: [] };
 
     const raw = await new Response(result.stream).text();
