@@ -36,41 +36,60 @@ export function HeroSection() {
             ))}
           </div>
         </div>
-        <div className="relative min-h-[390px] overflow-hidden border border-[#6D28D9]/50 bg-black shadow-[0_0_70px_rgba(109,40,217,0.25)] sm:min-h-[420px]">
-          <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(109,40,217,0.22),transparent_36%),radial-gradient(circle_at_45%_55%,rgba(250,204,21,0.2),transparent_20%)]" />
-          <div className="absolute inset-0 opacity-30 bg-[linear-gradient(135deg,transparent_0_44%,#6D28D9_44%_50%,transparent_50%_100%)]" />
-          <div className="absolute left-5 top-5 border border-[#FACC15]/50 bg-[#FACC15] px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-black sm:left-8 sm:top-8 sm:px-4 sm:text-xs sm:tracking-[0.2em]">
-            We come to you
-          </div>
+        <div className="relative overflow-hidden border border-[#6D28D9]/50 bg-black p-5 shadow-[0_0_70px_rgba(109,40,217,0.25)] sm:p-7">
+          <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(109,40,217,0.24),transparent_34%),linear-gradient(135deg,transparent_0_42%,rgba(109,40,217,0.42)_42%_49%,transparent_49%_100%)]" />
+          <div className="absolute inset-x-0 top-0 h-1 bg-[#FACC15]" />
 
-          <div className="absolute left-5 right-5 top-20 border border-white/10 bg-[#080808]/90 p-4 shadow-2xl backdrop-blur sm:left-8 sm:right-8 sm:top-24 sm:p-6">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#FACC15] sm:text-xs sm:tracking-[0.22em]">Mobile detailing</p>
-            <h2 className="mt-2 text-3xl font-black uppercase leading-none text-white sm:mt-3 sm:text-5xl">
-              Decatur, IN
-            </h2>
-            <p className="mt-3 text-xs font-bold uppercase tracking-[0.12em] text-zinc-300 sm:text-sm sm:tracking-[0.14em]">
-              30-minute service radius
-            </p>
-          </div>
+          <div className="relative grid gap-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="inline-flex bg-[#FACC15] px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-black sm:px-4 sm:tracking-[0.2em]">
+                  We come to you
+                </p>
+                <h2 className="mt-5 text-3xl font-black uppercase leading-none text-white sm:text-5xl">
+                  Decatur
+                  <span className="block text-[#FACC15]">Mobile Radius</span>
+                </h2>
+              </div>
+              <div className="hidden border border-[#6D28D9]/60 bg-[#080808] px-4 py-3 text-right shadow-[0_0_26px_rgba(109,40,217,0.24)] sm:block">
+                <p className="text-2xl font-black uppercase leading-none text-white">30</p>
+                <p className="mt-1 text-[10px] font-black uppercase tracking-[0.16em] text-[#FACC15]">Minutes</p>
+              </div>
+            </div>
 
-          <div className="absolute bottom-24 left-7 right-2 grid skew-x-[-12deg] grid-cols-3 overflow-hidden border border-[#6D28D9]/60 bg-[#6D28D9] shadow-[0_0_45px_rgba(109,40,217,0.55)] sm:bottom-28 sm:left-10 sm:right-4">
-            {[
-              ["9AM-9PM", "Hours"],
-              ["$20", "Deposit"],
-              ["8PM", "Last start"],
-            ].map(([value, label]) => (
-              <div key={label} className="min-h-16 border-r border-black/30 bg-[#6D28D9] p-3 last:border-r-0 sm:min-h-20 sm:p-4">
-                <div className="skew-x-[12deg]">
-                  <p className="text-lg font-black uppercase leading-none text-white sm:text-2xl">{value}</p>
-                  <p className="mt-2 text-[9px] font-black uppercase tracking-[0.15em] text-[#FACC15] sm:text-[10px] sm:tracking-[0.18em]">{label}</p>
+            <div className="grid gap-4 md:grid-cols-[0.95fr_1.05fr]">
+              <div className="relative min-h-48 overflow-hidden border border-white/10 bg-[#080808] p-5">
+                <div className="absolute inset-0 opacity-35 bg-[linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px)] bg-[size:28px_28px]" />
+                <div className="absolute left-1/2 top-1/2 size-36 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#FACC15]/70" />
+                <div className="absolute left-1/2 top-1/2 size-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#6D28D9] bg-[#6D28D9]/20" />
+                <div className="absolute left-1/2 top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-[#FACC15] shadow-[0_0_28px_rgba(250,204,21,0.6)]" />
+                <div className="absolute inset-x-5 bottom-5 border border-white/10 bg-black/80 p-3 backdrop-blur">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#FACC15]">Home base</p>
+                  <p className="mt-1 text-xl font-black uppercase leading-none text-white">Decatur, IN</p>
                 </div>
               </div>
-            ))}
-          </div>
 
-          <div className="absolute bottom-5 left-5 right-5 border border-white/10 bg-black/80 p-4 backdrop-blur sm:bottom-8 sm:left-8 sm:right-8 sm:p-5">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#FACC15] sm:text-xs sm:tracking-[0.2em]">Signature finish</p>
-            <p className="mt-2 text-lg font-black uppercase leading-tight text-white sm:text-2xl">Interior, exterior, specialty rigs</p>
+              <div className="grid gap-3">
+                {[
+                  ["9AM-9PM", "Daily service hours"],
+                  ["8PM", "Latest appointment start"],
+                  ["$20", "Deposit applied to detail"],
+                ].map(([value, label]) => (
+                  <div key={label} className="group grid grid-cols-[86px_1fr] items-center border border-white/10 bg-[#080808]/90 transition hover:border-[#FACC15]/60">
+                    <div className="bg-[#6D28D9] px-4 py-4 text-xl font-black uppercase leading-none text-white shadow-[0_0_26px_rgba(109,40,217,0.3)] transition group-hover:bg-[#FACC15] group-hover:text-black">
+                      {value}
+                    </div>
+                    <p className="px-4 py-3 text-[10px] font-black uppercase leading-5 tracking-[0.16em] text-zinc-200">{label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="border border-[#6D28D9]/60 bg-[#080808]/95 p-4 shadow-[0_0_30px_rgba(109,40,217,0.22)]">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#FACC15] sm:text-xs sm:tracking-[0.2em]">Signature finish</p>
+              <p className="mt-2 text-lg font-black uppercase leading-tight text-white sm:text-2xl">Interior, exterior, specialty rigs</p>
+              <p className="mt-3 text-sm font-semibold leading-6 text-zinc-400">Mobile appointments across Decatur and nearby communities within roughly 30 minutes.</p>
+            </div>
           </div>
         </div>
       </div>
