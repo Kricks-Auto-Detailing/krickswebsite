@@ -64,6 +64,7 @@ export function AdminGalleryManager({
   const [items, setItems] = useState<UploadedItem[]>(initialItems);
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pricingCatalog, setPricingCatalog] = useState<PricingCatalog | null>(initialPricingCatalog);
   const [priceValues, setPriceValues] = useState<Record<string, string>>(() => buildPriceValues(initialPricingCatalog));
   const [pricingMessage, setPricingMessage] = useState("");
@@ -176,6 +177,33 @@ export function AdminGalleryManager({
     setStatus("idle");
     setMessage("Gallery set uploaded.");
     await loadItems();
+  }
+
+  async function handleDelete(item: UploadedItem) {
+    const confirmed = window.confirm(`Delete "${item.title}" from the gallery? This cannot be undone.`);
+    if (!confirmed) return;
+
+    setDeletingId(item.id);
+    setMessage("");
+
+    const response = await fetch("/api/admin/gallery", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: item.id }),
+    });
+    const result = (await response.json().catch(() => null)) as { ok?: boolean; message?: string } | null;
+
+    if (!response.ok || !result?.ok) {
+      setStatus("error");
+      setMessage(result?.message ?? "Gallery set could not be deleted.");
+      setDeletingId(null);
+      return;
+    }
+
+    setItems((current) => current.filter((galleryItem) => galleryItem.id !== item.id));
+    setStatus("idle");
+    setMessage("Gallery set deleted.");
+    setDeletingId(null);
   }
 
   async function handlePricingSave(event: FormEvent<HTMLFormElement>) {
@@ -352,12 +380,22 @@ export function AdminGalleryManager({
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={item.afterSrc} alt="" className="h-24 w-full object-cover" />
                   </div>
-                  <div>
+                  <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-start">
+                    <div>
                     <p className="text-lg font-black uppercase text-white">{item.title}</p>
                     <p className="mt-1 text-sm text-zinc-400">{item.categorySlug} / {item.published ? "Published" : "Draft"}</p>
                     <p className="mt-2 text-xs uppercase tracking-[0.16em] text-[#FACC15]">
                       {item.beforeLabel} / {item.afterLabel}
                     </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(item)}
+                      disabled={deletingId === item.id}
+                      className="min-h-10 border border-red-500/50 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-red-200 transition hover:border-red-300 hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {deletingId === item.id ? "Deleting" : "Delete"}
+                    </button>
                   </div>
                 </article>
               ))

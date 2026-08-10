@@ -1,10 +1,10 @@
 import { randomUUID } from "crypto";
-import { put } from "@vercel/blob";
-import { mkdir, writeFile } from "fs/promises";
+import { del, put } from "@vercel/blob";
+import { mkdir, unlink, writeFile } from "fs/promises";
 import path from "path";
 import { cookies } from "next/headers";
 import { getAdminCookieName, isAdminSessionReady } from "@/lib/admin-auth";
-import { addUploadedGalleryItem, getUploadedGalleryItems } from "@/lib/gallery-store";
+import { addUploadedGalleryItem, getUploadedGalleryItems, removeUploadedGalleryItem } from "@/lib/gallery-store";
 import { galleryCategoryOptions } from "@/lib/services";
 
 export const runtime = "nodejs";
@@ -78,6 +78,32 @@ export async function POST(request: Request) {
   }
 }
 
+export async function DELETE(request: Request) {
+  try {
+    if (!(await isAuthenticated())) {
+      return Response.json({ ok: false, message: "Unauthorized." }, { status: 401 });
+    }
+
+    const body = (await request.json().catch(() => null)) as { id?: string } | null;
+    const id = typeof body?.id === "string" ? body.id.trim() : "";
+
+    if (!id) {
+      return Response.json({ ok: false, message: "Choose a gallery set to delete." }, { status: 400 });
+    }
+
+    const item = await removeUploadedGalleryItem(id);
+    if (!item) {
+      return Response.json({ ok: false, message: "Gallery set was not found." }, { status: 404 });
+    }
+
+    await Promise.allSettled([deleteGalleryFile(item.beforeSrc), deleteGalleryFile(item.afterSrc)]);
+
+    return Response.json({ ok: true });
+  } catch (error) {
+    return Response.json({ ok: false, message: getUploadErrorMessage(error) }, { status: 400 });
+  }
+}
+
 async function isAuthenticated() {
   const cookieStore = await cookies();
   return isAdminSessionReady(cookieStore.get(getAdminCookieName())?.value);
@@ -113,6 +139,40 @@ async function saveGalleryFile(file: File, name: string) {
   await writeFile(destination, bytes);
 
   return `/uploads/gallery/${filename}`;
+}
+
+async function deleteGalleryFile(src: string) {
+  const blobPath = getBlobGalleryPath(src);
+  if (blobPath && isBlobStorageEnabled()) {
+    await del(blobPath);
+    return;
+  }
+
+  const localPath = getLocalGalleryPath(src);
+  if (!localPath) return;
+
+  await unlink(localPath).catch((error: NodeJS.ErrnoException) => {
+    if (error.code !== "ENOENT") throw error;
+  });
+}
+
+function getBlobGalleryPath(src: string) {
+  try {
+    const url = new URL(src, "https://kricks.local");
+    const blobPath = url.pathname === "/api/gallery/image" ? url.searchParams.get("path") : "";
+    return blobPath && /^gallery\/[a-f0-9-]+-(before|after)\.(jpg|png|webp)$/i.test(blobPath) ? blobPath : "";
+  } catch {
+    return "";
+  }
+}
+
+function getLocalGalleryPath(src: string) {
+  if (!src.startsWith("/uploads/gallery/")) return "";
+
+  const filename = path.basename(src);
+  if (!/^[a-f0-9-]+-(before|after)\.(jpg|png|webp)$/i.test(filename)) return "";
+
+  return path.join(process.cwd(), "public", "uploads", "gallery", filename);
 }
 
 function getString(formData: FormData, key: string) {

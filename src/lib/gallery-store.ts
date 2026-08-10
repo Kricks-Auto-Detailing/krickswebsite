@@ -33,6 +33,16 @@ export async function addUploadedGalleryItem(item: UploadedGalleryItem) {
   return item;
 }
 
+export async function removeUploadedGalleryItem(id: string) {
+  const data = await readGalleryData();
+  const item = data.items.find((galleryItem) => galleryItem.id === id);
+  if (!item) return null;
+
+  data.items = data.items.filter((galleryItem) => galleryItem.id !== id);
+  await writeGalleryData(data);
+  return item;
+}
+
 export async function getPublicGalleryCategories() {
   const uploads = await getUploadedGalleryItems();
 
