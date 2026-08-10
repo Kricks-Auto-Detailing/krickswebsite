@@ -16,7 +16,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function AdminGalleryPage() {
+type AdminGalleryPageProps = {
+  searchParams: Promise<{ reset?: string }>;
+};
+
+export default async function AdminGalleryPage({ searchParams }: AdminGalleryPageProps) {
+  const params = await searchParams;
   const cookieStore = await cookies();
   const initialAuthenticated = isValidAdminSession(cookieStore.get(getAdminCookieName())?.value);
   const initialPasswordChangeRequired = initialAuthenticated ? await isAdminPasswordChangeRequired() : false;
@@ -42,6 +47,7 @@ export default async function AdminGalleryPage() {
             categories={galleryCategoryOptions}
             initialAuthenticated={initialAuthenticated}
             initialPasswordChangeRequired={initialPasswordChangeRequired}
+            initialPasswordResetToken={params.reset}
             initialItems={initialItems}
             initialPricingCatalog={initialPricingCatalog}
           />

@@ -15,6 +15,12 @@ type StoredAdminCredentials = {
   updatedAt?: string;
 };
 
+type PasswordResetPayload = {
+  purpose: "admin-password-reset";
+  exp: number;
+  nonce: string;
+};
+
 export function getAdminCookieName() {
   return cookieName;
 }
@@ -69,6 +75,35 @@ export function createAdminSessionValue() {
   const issuedAt = Date.now().toString();
   const signature = createHmac("sha256", secret).update(issuedAt).digest("base64url");
   return `${issuedAt}.${signature}`;
+}
+
+export function createAdminPasswordResetToken() {
+  const payload: PasswordResetPayload = {
+    purpose: "admin-password-reset",
+    exp: Date.now() + 1000 * 60 * 30,
+    nonce: randomBytes(16).toString("base64url"),
+  };
+  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const signature = createHmac("sha256", getSessionSecret()).update(encodedPayload).digest("base64url");
+  return `${encodedPayload}.${signature}`;
+}
+
+export function isValidAdminPasswordResetToken(token: string | undefined) {
+  if (!token) return false;
+
+  const [encodedPayload, signature] = token.split(".");
+  const secret = getSessionSecret();
+  if (!encodedPayload || !signature || !secret) return false;
+
+  const expected = createHmac("sha256", secret).update(encodedPayload).digest("base64url");
+  if (!safeEqual(signature, expected)) return false;
+
+  try {
+    const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8")) as PasswordResetPayload;
+    return payload.purpose === "admin-password-reset" && Number.isFinite(payload.exp) && payload.exp > Date.now();
+  } catch {
+    return false;
+  }
 }
 
 export function isValidAdminSession(value: string | undefined) {

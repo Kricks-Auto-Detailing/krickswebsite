@@ -45,6 +45,7 @@ type AdminGalleryManagerProps = {
   categories: CategoryOption[];
   initialAuthenticated: boolean;
   initialPasswordChangeRequired: boolean;
+  initialPasswordResetToken?: string;
   initialItems: UploadedItem[];
   initialPricingCatalog: PricingCatalog | null;
 };
@@ -53,11 +54,13 @@ export function AdminGalleryManager({
   categories,
   initialAuthenticated,
   initialPasswordChangeRequired,
+  initialPasswordResetToken,
   initialItems,
   initialPricingCatalog,
 }: AdminGalleryManagerProps) {
   const [authenticated, setAuthenticated] = useState(initialAuthenticated);
   const [passwordChangeRequired, setPasswordChangeRequired] = useState(initialPasswordChangeRequired);
+  const [passwordResetToken, setPasswordResetToken] = useState(initialPasswordResetToken ?? "");
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -123,6 +126,52 @@ export function AdminGalleryManager({
       await loadItems();
       await loadPricing();
     }
+  }
+
+  async function handleForgotPassword() {
+    setStatus("loading");
+    setMessage("");
+
+    const response = await fetch("/api/admin/password-reset", { method: "POST" });
+    const result = (await response.json().catch(() => null)) as { ok?: boolean; message?: string } | null;
+
+    if (!response.ok || !result?.ok) {
+      setStatus("error");
+      setMessage(result?.message ?? "Reset email could not be sent.");
+      return;
+    }
+
+    setStatus("idle");
+    setMessage("Password reset link sent to Zach's email.");
+  }
+
+  async function handlePasswordReset(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setStatus("loading");
+    setMessage("");
+
+    const response = await fetch("/api/admin/password-reset", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: passwordResetToken, newPassword, confirmPassword }),
+    });
+    const result = (await response.json().catch(() => null)) as { ok?: boolean; message?: string; passwordChangeRequired?: boolean } | null;
+
+    if (!response.ok || !result?.ok) {
+      setStatus("error");
+      setMessage(result?.message ?? "Password could not be reset.");
+      return;
+    }
+
+    setAuthenticated(true);
+    setPasswordChangeRequired(Boolean(result.passwordChangeRequired));
+    setPasswordResetToken("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setStatus("idle");
+    setMessage("Password reset. Admin tools are unlocked.");
+    await loadItems();
+    await loadPricing();
   }
 
   async function handlePasswordChange(event: FormEvent<HTMLFormElement>) {
@@ -248,6 +297,58 @@ export function AdminGalleryManager({
     setPricingMessage("Prices saved to Square Item Library.");
   }
 
+  if (passwordResetToken && !authenticated) {
+    return (
+      <form onSubmit={handlePasswordReset} className="grid max-w-xl gap-5 border border-[#6D28D9]/50 bg-[#080808] p-6 shadow-[0_0_50px_rgba(109,40,217,0.18)]">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-[#FACC15]">Password reset</p>
+          <h2 className="mt-2 text-2xl font-black uppercase text-white">Set a new admin password</h2>
+          <p className="mt-3 text-sm leading-6 text-zinc-400">
+            Create a new password for the owner gallery and pricing tools.
+          </p>
+        </div>
+        <label className="grid gap-2">
+          <span className="text-xs font-black uppercase tracking-[0.18em] text-[#FACC15]">New password</span>
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(event) => setNewPassword(event.target.value)}
+            className="field"
+            autoComplete="new-password"
+            minLength={12}
+            required
+          />
+        </label>
+        <label className="grid gap-2">
+          <span className="text-xs font-black uppercase tracking-[0.18em] text-[#FACC15]">Confirm password</span>
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            className="field"
+            autoComplete="new-password"
+            minLength={12}
+            required
+          />
+        </label>
+        {message ? <p className="text-sm font-bold text-[#FACC15]">{message}</p> : null}
+        <button className="min-h-12 skew-x-[-10deg] bg-[#FACC15] px-5 py-3 text-sm font-black uppercase tracking-[0.16em] text-black transition hover:bg-white disabled:opacity-60" disabled={status === "loading"}>
+          <span className="block skew-x-[10deg]">{status === "loading" ? "Saving" : "Reset Password"}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setPasswordResetToken("");
+            setMessage("");
+          }}
+          className="text-left text-xs font-black uppercase tracking-[0.16em] text-zinc-400 transition hover:text-[#FACC15]"
+        >
+          Back to login
+        </button>
+      </form>
+    );
+  }
+
   if (!authenticated) {
     return (
       <form onSubmit={handleLogin} className="grid max-w-xl gap-5 border border-[#6D28D9]/50 bg-[#080808] p-6 shadow-[0_0_50px_rgba(109,40,217,0.18)]">
@@ -262,6 +363,14 @@ export function AdminGalleryManager({
         {message ? <p className="text-sm font-bold text-[#FACC15]">{message}</p> : null}
         <button className="min-h-12 skew-x-[-10deg] bg-[#FACC15] px-5 py-3 text-sm font-black uppercase tracking-[0.16em] text-black transition hover:bg-white" disabled={status === "loading"}>
           <span className="block skew-x-[10deg]">Login</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleForgotPassword}
+          className="text-left text-xs font-black uppercase tracking-[0.16em] text-zinc-400 transition hover:text-[#FACC15] disabled:opacity-60"
+          disabled={status === "loading"}
+        >
+          Forgot password?
         </button>
       </form>
     );
